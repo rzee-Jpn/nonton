@@ -1,2 +1,0 @@
-# ai-test
-tester termux
