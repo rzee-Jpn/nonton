@@ -8,7 +8,7 @@ interface AdminLoginProps {
   onLogin: (password: string) => boolean;
 }
 
-export function AdminLogin({ onLogin }: AdminLoginProps) {
+export function AdminLogin({ siteName, onLogin }: AdminLoginProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
 
@@ -23,7 +23,7 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
     <div className="min-h-screen bg-[#08080f] flex items-center justify-center p-4">
       <div className="bg-[#0e0e1a] border border-white/[0.08] rounded-2xl p-8 w-full max-w-sm text-center">
         <h2 className="font-['Bebas_Neue'] text-3xl tracking-wider text-[#f0f0f0] mb-1">
-          Admin <span className="text-[#e63946]">Panel</span>
+          {siteName} <span className="text-[#e63946]">Admin</span>
         </h2>
         <p className="text-sm text-[#888] mb-7">Masukkan password untuk mengakses dashboard</p>
         
