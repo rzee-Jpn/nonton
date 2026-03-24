@@ -7,14 +7,20 @@ import type { Anime, Episode } from '@/types';
 interface AnimeDetailProps {
   getAnimeBySlug: (slug: string) => Anime | undefined;
   getEpisodes: (slug: string) => Episode[];
+  loadEpisodes: (slug: string) => Promise<Episode[]>;
   getLastWatchedEpisode: (slug: string) => number | null;
   getWatchedEpisodes: (slug: string) => number[];
 }
 
-export function AnimeDetail({ getAnimeBySlug, getEpisodes, getLastWatchedEpisode, getWatchedEpisodes }: AnimeDetailProps) {
+export function AnimeDetail({ getAnimeBySlug, getEpisodes, loadEpisodes, getLastWatchedEpisode, getWatchedEpisodes }: AnimeDetailProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Lazy load episodes saat halaman dibuka
+  useEffect(() => {
+    if (slug) loadEpisodes(slug);
+  }, [slug, loadEpisodes]);
 
   const anime = slug ? getAnimeBySlug(slug) : undefined;
   const episodes = slug ? getEpisodes(slug) : [];
