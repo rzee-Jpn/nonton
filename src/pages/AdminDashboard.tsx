@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { 
   LayoutDashboard, Film, PlayCircle, Wallet, Heart, Settings, 
   LogOut, ExternalLink, Plus, RotateCcw, Save, Trash2, Edit, 
-  X, Users, DollarSign
+  X, Users, DollarSign, Github, Upload, CheckCircle, AlertCircle, Loader2, Eye, EyeOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import type { Anime, Episode, Donator, SiteSettings } from '@/types';
+import { pushToGitHub } from '@/lib/githubSync';
 
 interface AdminDashboardProps {
   settings: SiteSettings;
@@ -166,17 +167,30 @@ export function AdminDashboard({
 
             <div>
               <div className="text-[0.7rem] font-bold uppercase tracking-wider text-[#888] mb-2 px-3">Sistem</div>
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  activeTab === 'settings' 
-                    ? 'text-[#e63946] bg-[#e63946]/10 border-l-2 border-[#e63946]' 
-                    : 'text-[#888] hover:text-[#f0f0f0] hover:bg-white/[0.03]'
-                }`}
-              >
-                <Settings className="w-4 h-4" />
-                Pengaturan Site
-              </button>
+              <div className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('settings')}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    activeTab === 'settings' 
+                      ? 'text-[#e63946] bg-[#e63946]/10 border-l-2 border-[#e63946]' 
+                      : 'text-[#888] hover:text-[#f0f0f0] hover:bg-white/[0.03]'
+                  }`}
+                >
+                  <Settings className="w-4 h-4" />
+                  Pengaturan Site
+                </button>
+                <button
+                  onClick={() => setActiveTab('github')}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    activeTab === 'github' 
+                      ? 'text-[#e63946] bg-[#e63946]/10 border-l-2 border-[#e63946]' 
+                      : 'text-[#888] hover:text-[#f0f0f0] hover:bg-white/[0.03]'
+                  }`}
+                >
+                  <Github className="w-4 h-4" />
+                  GitHub Sync
+                </button>
+              </div>
             </div>
           </nav>
         </aside>
@@ -219,6 +233,13 @@ export function AdminDashboard({
           )}
           {activeTab === 'settings' && (
             <SettingsTab settings={settings} onSave={updateSettings} />
+          )}
+          {activeTab === 'github' && (
+            <GitHubSyncTab 
+              settings={settings}
+              onSave={updateSettings}
+              data={{ settings, anime, episodes, donators }}
+            />
           )}
         </main>
       </div>
@@ -1136,6 +1157,207 @@ function SettingsTab({ settings, onSave }: { settings: SiteSettings; onSave: (s:
             Simpan Pengaturan
           </Button>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// GitHub Sync Tab
+function GitHubSyncTab({
+  settings,
+  onSave,
+  data,
+}: {
+  settings: SiteSettings;
+  onSave: (s: Partial<SiteSettings>) => void;
+  data: { settings: SiteSettings; anime: Anime[]; episodes: Record<string, Episode[]>; donators: Donator[] };
+}) {
+  const [formData, setFormData] = useState({
+    github_token: settings.github_token || '',
+    github_owner: settings.github_owner || '',
+    github_repo: settings.github_repo || '',
+    github_branch: settings.github_branch || 'main',
+  });
+  const [showToken, setShowToken] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [result, setResult] = useState<{ success: boolean; message: string; commitUrl?: string } | null>(null);
+
+  const handleSaveConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+    setResult({ success: true, message: 'Konfigurasi GitHub disimpan!' });
+    setTimeout(() => setResult(null), 3000);
+  };
+
+  const handlePush = async () => {
+    setSyncing(true);
+    setResult(null);
+    const res = await pushToGitHub(data, {
+      token: formData.github_token,
+      owner: formData.github_owner,
+      repo: formData.github_repo,
+      branch: formData.github_branch,
+    });
+    setResult(res);
+    setSyncing(false);
+  };
+
+  return (
+    <div>
+      <h2 className="font-['Bebas_Neue'] text-3xl tracking-wider text-[#f0f0f0] mb-1">GitHub Sync</h2>
+      <p className="text-sm text-[#888] mb-6">
+        Push data anime & episode langsung ke GitHub. Vercel akan otomatis deploy ulang.
+      </p>
+
+      {/* How it works */}
+      <div className="bg-[#7209b7]/10 border border-[#7209b7]/30 rounded-xl p-5 mb-6">
+        <h3 className="text-sm font-bold text-[#bf7fff] mb-3 flex items-center gap-2">
+          <Github className="w-4 h-4" /> Cara Kerja
+        </h3>
+        <ol className="text-sm text-[#888] space-y-1.5 list-decimal list-inside">
+          <li>Kamu edit anime/episode dari dashboard seperti biasa</li>
+          <li>Klik tombol <strong className="text-[#f0f0f0]">"Push ke GitHub"</strong> di bawah</li>
+          <li>File <code className="text-[#e63946]">src/data/default.ts</code> di repo kamu otomatis terupdate</li>
+          <li>Vercel detect perubahan → auto deploy → website live dalam ~1 menit</li>
+        </ol>
+      </div>
+
+      {/* Config Form */}
+      <div className="bg-[#14141f] border border-white/[0.08] rounded-xl p-6 mb-6">
+        <h3 className="font-['Bebas_Neue'] text-lg tracking-wider text-[#f0f0f0] mb-4">Konfigurasi GitHub</h3>
+        <form onSubmit={handleSaveConfig} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-[#888] mb-1.5">
+                GitHub Username / Org Owner
+              </Label>
+              <Input
+                value={formData.github_owner}
+                onChange={(e) => setFormData({ ...formData, github_owner: e.target.value })}
+                placeholder="contoh: johndoe"
+                className="bg-white/[0.06] border-white/[0.08]"
+              />
+            </div>
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-[#888] mb-1.5">
+                Nama Repository
+              </Label>
+              <Input
+                value={formData.github_repo}
+                onChange={(e) => setFormData({ ...formData, github_repo: e.target.value })}
+                placeholder="contoh: anime-website"
+                className="bg-white/[0.06] border-white/[0.08]"
+              />
+            </div>
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-[#888] mb-1.5">
+                Branch
+              </Label>
+              <Input
+                value={formData.github_branch}
+                onChange={(e) => setFormData({ ...formData, github_branch: e.target.value })}
+                placeholder="main"
+                className="bg-white/[0.06] border-white/[0.08]"
+              />
+            </div>
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-[#888] mb-1.5">
+                Personal Access Token
+              </Label>
+              <div className="relative">
+                <Input
+                  type={showToken ? 'text' : 'password'}
+                  value={formData.github_token}
+                  onChange={(e) => setFormData({ ...formData, github_token: e.target.value })}
+                  placeholder="ghp_xxxxxxxxxxxx"
+                  className="bg-white/[0.06] border-white/[0.08] pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowToken(!showToken)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888] hover:text-[#f0f0f0]"
+                >
+                  {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-[#888] mt-1">
+                Buat di{' '}
+                <a
+                  href="https://github.com/settings/tokens/new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#e63946] hover:underline"
+                >
+                  github.com/settings/tokens
+                </a>
+                {' '}→ centang permission <code className="text-[#bf7fff]">repo</code>
+              </p>
+            </div>
+          </div>
+          <Button type="submit" className="bg-[#7209b7] hover:bg-[#5a0791]">
+            <Save className="w-4 h-4 mr-1.5" />
+            Simpan Konfigurasi
+          </Button>
+        </form>
+      </div>
+
+      {/* Push Button */}
+      <div className="bg-[#14141f] border border-white/[0.08] rounded-xl p-6">
+        <h3 className="font-['Bebas_Neue'] text-lg tracking-wider text-[#f0f0f0] mb-2">Push ke GitHub</h3>
+        <p className="text-sm text-[#888] mb-5">
+          Semua data saat ini (anime, episode, donatur, pengaturan) akan ditulis ke{' '}
+          <code className="text-[#e63946]">src/data/default.ts</code> dan di-commit ke repo GitHub kamu.
+        </p>
+
+        {result && (
+          <div className={`flex items-start gap-3 p-4 rounded-xl mb-4 text-sm ${
+            result.success
+              ? 'bg-[#20c864]/10 border border-[#20c864]/30 text-[#20c864]'
+              : 'bg-[#e63946]/10 border border-[#e63946]/30 text-[#e63946]'
+          }`}>
+            {result.success
+              ? <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              : <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            }
+            <div>
+              <p>{result.message}</p>
+              {result.commitUrl && (
+                <a
+                  href={result.commitUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#20c864] underline text-xs mt-1 inline-block"
+                >
+                  Lihat commit di GitHub →
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
+        <Button
+          onClick={handlePush}
+          disabled={syncing || !formData.github_token || !formData.github_owner || !formData.github_repo}
+          className="bg-[#e63946] hover:bg-[#ff4d5a] disabled:opacity-50"
+        >
+          {syncing ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              Sedang Push...
+            </>
+          ) : (
+            <>
+              <Upload className="w-4 h-4 mr-1.5" />
+              Push ke GitHub Sekarang
+            </>
+          )}
+        </Button>
+
+        {(!formData.github_token || !formData.github_owner || !formData.github_repo) && (
+          <p className="text-xs text-[#888] mt-3">
+            ⚠️ Isi konfigurasi GitHub di atas terlebih dahulu sebelum push.
+          </p>
+        )}
       </div>
     </div>
   );
