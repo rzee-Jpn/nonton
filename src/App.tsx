@@ -126,7 +126,7 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Toaster 
         position="bottom-right" 
         toastOptions={{
@@ -235,7 +235,7 @@ function App() {
         {/* 404 */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
