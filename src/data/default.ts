@@ -12,7 +12,12 @@ export const DEFAULT_DB: Database = {
     whatsapp_msg: "Halo, saya ingin donasi untuk support AnimeXStream 🙏",
     qris_image: "",
     admin_password: "admin123",
-    featured_slug: "naruto"
+    featured_slug: "naruto",
+    // GitHub Sync (isi di Admin → GitHub Sync)
+    github_token: "",
+    github_owner: "",
+    github_repo: "",
+    github_branch: "main"
   },
   anime: [
     {
