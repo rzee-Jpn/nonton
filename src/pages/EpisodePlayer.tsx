@@ -117,7 +117,7 @@ export function EpisodePlayer({
               className="w-full h-full"
               allowFullScreen
               allow="autoplay; fullscreen"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-presentation"
+              sandbox="allow-same-origin allow-scripts allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox"
               onLoad={() => setIsLoading(false)}
             />
           </div>
