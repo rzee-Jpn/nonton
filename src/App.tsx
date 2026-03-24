@@ -45,7 +45,7 @@ function App() {
     setServerPreference,
   } = useWatchHistory();
 
-  const { isAuthenticated, login, logout } = useAdminAuth();
+  const { isAuthenticated, isLoading: isAuthLoading, login, logout } = useAdminAuth();
 
   // Toast wrappers for actions
   const handleAddAnime = (animeData: Parameters<typeof addAnime>[0]) => {
@@ -117,7 +117,7 @@ function App() {
     toast.info('Logout berhasil!');
   };
 
-  if (!isLoaded) {
+  if (!isLoaded || isAuthLoading) {
     return (
       <div className="min-h-screen bg-[#08080f] flex items-center justify-center">
         <div className="text-[#e63946] text-xl font-['Bebas_Neue'] tracking-wider">Loading...</div>
