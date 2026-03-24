@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   LayoutDashboard, Film, PlayCircle, Wallet, Heart, Settings, 
@@ -12,15 +12,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import type { Anime, Episode, Donator, SiteSettings } from '@/types';
-import { pushToGitHub } from '@/lib/githubSync';
+import { pushSettings, pushAnime, pushDonators, pushEpisodes, type SyncResult } from '@/lib/githubSync';
 
 interface AdminDashboardProps {
   settings: SiteSettings;
   anime: Anime[];
-  episodes: Record<string, Episode[]>;
+  episodeCache: Record<string, Episode[]>;
   donators: Donator[];
   totalEpisodes: number;
   totalDonations: number;
+  loadEpisodes: (slug: string) => Promise<Episode[]>;
   updateSettings: (settings: Partial<SiteSettings>) => void;
   addAnime: (anime: Omit<Anime, 'id'>) => void;
   updateAnime: (id: number, anime: Partial<Anime>) => void;
@@ -37,10 +38,11 @@ interface AdminDashboardProps {
 export function AdminDashboard({
   settings,
   anime,
-  episodes,
+  episodeCache,
   donators,
   totalEpisodes,
   totalDonations,
+  loadEpisodes,
   updateSettings,
   addAnime,
   updateAnime,
@@ -215,7 +217,8 @@ export function AdminDashboard({
           {activeTab === 'episodes' && (
             <EpisodesTab
               anime={anime}
-              episodes={episodes}
+              episodes={episodeCache}
+              loadEpisodes={loadEpisodes}
               onAdd={addEpisode}
               onUpdate={updateEpisode}
               onDelete={deleteEpisode}
@@ -235,10 +238,12 @@ export function AdminDashboard({
             <SettingsTab settings={settings} onSave={updateSettings} />
           )}
           {activeTab === 'github' && (
-            <GitHubSyncTab 
+            <GitHubSyncTab
               settings={settings}
               onSave={updateSettings}
-              data={{ settings, anime, episodes, donators }}
+              anime={anime}
+              episodeCache={episodeCache}
+              donators={donators}
             />
           )}
         </main>
@@ -607,12 +612,14 @@ function AnimeTab({
 function EpisodesTab({
   anime,
   episodes,
+  loadEpisodes,
   onAdd,
   onUpdate,
   onDelete
 }: {
   anime: Anime[];
   episodes: Record<string, Episode[]>;
+  loadEpisodes: (slug: string) => Promise<Episode[]>;
   onAdd: (slug: string, episode: Omit<Episode, 'number'>, number?: number) => void;
   onUpdate: (slug: string, number: number, episode: Partial<Episode>) => void;
   onDelete: (slug: string, number: number) => void;
@@ -628,6 +635,11 @@ function EpisodesTab({
 
   const currentEpisodes = episodes[selectedAnime] || [];
   const selectedAnimeData = anime.find(a => a.slug === selectedAnime);
+
+  // Load episode saat pilih anime berubah
+  useEffect(() => {
+    if (selectedAnime) loadEpisodes(selectedAnime);
+  }, [selectedAnime, loadEpisodes]);
 
   const resetForm = () => {
     setFormData({
@@ -1166,11 +1178,15 @@ function SettingsTab({ settings, onSave }: { settings: SiteSettings; onSave: (s:
 function GitHubSyncTab({
   settings,
   onSave,
-  data,
+  anime,
+  episodeCache,
+  donators,
 }: {
   settings: SiteSettings;
   onSave: (s: Partial<SiteSettings>) => void;
-  data: { settings: SiteSettings; anime: Anime[]; episodes: Record<string, Episode[]>; donators: Donator[] };
+  anime: Anime[];
+  episodeCache: Record<string, Episode[]>;
+  donators: Donator[];
 }) {
   const [formData, setFormData] = useState({
     github_token: settings.github_token || '',
@@ -1179,34 +1195,39 @@ function GitHubSyncTab({
     github_branch: settings.github_branch || 'main',
   });
   const [showToken, setShowToken] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; message: string; commitUrl?: string } | null>(null);
+  const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const [results, setResults] = useState<Record<string, SyncResult>>({});
+
+  const config = {
+    token: formData.github_token,
+    owner: formData.github_owner,
+    repo: formData.github_repo,
+    branch: formData.github_branch,
+  };
+
+  const isConfigured = config.token && config.owner && config.repo;
 
   const handleSaveConfig = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
-    setResult({ success: true, message: 'Konfigurasi GitHub disimpan!' });
-    setTimeout(() => setResult(null), 3000);
+    setResults(r => ({ ...r, config: { success: true, message: 'Konfigurasi disimpan!' } }));
+    setTimeout(() => setResults(r => { const n = {...r}; delete n.config; return n; }), 3000);
   };
 
-  const handlePush = async () => {
-    setSyncing(true);
-    setResult(null);
-    const res = await pushToGitHub(data, {
-      token: formData.github_token,
-      owner: formData.github_owner,
-      repo: formData.github_repo,
-      branch: formData.github_branch,
-    });
-    setResult(res);
-    setSyncing(false);
+  const run = async (key: string, fn: () => Promise<SyncResult>) => {
+    setLoadingKey(key);
+    const res = await fn();
+    setResults(r => ({ ...r, [key]: res }));
+    setLoadingKey(null);
   };
+
+  const episodeSlugs = Object.keys(episodeCache);
 
   return (
     <div>
       <h2 className="font-['Bebas_Neue'] text-3xl tracking-wider text-[#f0f0f0] mb-1">GitHub Sync</h2>
       <p className="text-sm text-[#888] mb-6">
-        Push data anime & episode langsung ke GitHub. Vercel akan otomatis deploy ulang.
+        Push data langsung ke GitHub. Vercel auto-deploy setelah push.
       </p>
 
       {/* How it works */}
@@ -1215,150 +1236,138 @@ function GitHubSyncTab({
           <Github className="w-4 h-4" /> Cara Kerja
         </h3>
         <ol className="text-sm text-[#888] space-y-1.5 list-decimal list-inside">
-          <li>Kamu edit anime/episode dari dashboard seperti biasa</li>
-          <li>Klik tombol <strong className="text-[#f0f0f0]">"Push ke GitHub"</strong> di bawah</li>
-          <li>File <code className="text-[#e63946]">src/data/default.ts</code> di repo kamu otomatis terupdate</li>
-          <li>Vercel detect perubahan → auto deploy → website live dalam ~1 menit</li>
+          <li>Edit anime / episode dari dashboard seperti biasa</li>
+          <li>Klik tombol <strong className="text-[#f0f0f0]">Push</strong> di bawah sesuai data yang berubah</li>
+          <li>Hanya file yang di-push yang berubah di GitHub (hemat bandwidth)</li>
+          <li>Vercel detect commit → auto deploy → live dalam ~1 menit</li>
         </ol>
       </div>
 
-      {/* Config Form */}
+      {/* Config */}
       <div className="bg-[#14141f] border border-white/[0.08] rounded-xl p-6 mb-6">
         <h3 className="font-['Bebas_Neue'] text-lg tracking-wider text-[#f0f0f0] mb-4">Konfigurasi GitHub</h3>
         <form onSubmit={handleSaveConfig} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-xs uppercase tracking-wider text-[#888] mb-1.5">
-                GitHub Username / Org Owner
-              </Label>
-              <Input
-                value={formData.github_owner}
-                onChange={(e) => setFormData({ ...formData, github_owner: e.target.value })}
-                placeholder="contoh: johndoe"
-                className="bg-white/[0.06] border-white/[0.08]"
-              />
+              <Label className="text-xs uppercase tracking-wider text-[#888] mb-1.5">GitHub Username</Label>
+              <Input value={formData.github_owner} onChange={e => setFormData({...formData, github_owner: e.target.value})} placeholder="johndoe" className="bg-white/[0.06] border-white/[0.08]" />
             </div>
             <div>
-              <Label className="text-xs uppercase tracking-wider text-[#888] mb-1.5">
-                Nama Repository
-              </Label>
-              <Input
-                value={formData.github_repo}
-                onChange={(e) => setFormData({ ...formData, github_repo: e.target.value })}
-                placeholder="contoh: anime-website"
-                className="bg-white/[0.06] border-white/[0.08]"
-              />
+              <Label className="text-xs uppercase tracking-wider text-[#888] mb-1.5">Nama Repository</Label>
+              <Input value={formData.github_repo} onChange={e => setFormData({...formData, github_repo: e.target.value})} placeholder="anime-website" className="bg-white/[0.06] border-white/[0.08]" />
             </div>
             <div>
-              <Label className="text-xs uppercase tracking-wider text-[#888] mb-1.5">
-                Branch
-              </Label>
-              <Input
-                value={formData.github_branch}
-                onChange={(e) => setFormData({ ...formData, github_branch: e.target.value })}
-                placeholder="main"
-                className="bg-white/[0.06] border-white/[0.08]"
-              />
+              <Label className="text-xs uppercase tracking-wider text-[#888] mb-1.5">Branch</Label>
+              <Input value={formData.github_branch} onChange={e => setFormData({...formData, github_branch: e.target.value})} placeholder="main" className="bg-white/[0.06] border-white/[0.08]" />
             </div>
             <div>
-              <Label className="text-xs uppercase tracking-wider text-[#888] mb-1.5">
-                Personal Access Token
-              </Label>
+              <Label className="text-xs uppercase tracking-wider text-[#888] mb-1.5">Personal Access Token</Label>
               <div className="relative">
-                <Input
-                  type={showToken ? 'text' : 'password'}
-                  value={formData.github_token}
-                  onChange={(e) => setFormData({ ...formData, github_token: e.target.value })}
-                  placeholder="ghp_xxxxxxxxxxxx"
-                  className="bg-white/[0.06] border-white/[0.08] pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowToken(!showToken)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888] hover:text-[#f0f0f0]"
-                >
+                <Input type={showToken ? 'text' : 'password'} value={formData.github_token} onChange={e => setFormData({...formData, github_token: e.target.value})} placeholder="ghp_xxxxxxxxxxxx" className="bg-white/[0.06] border-white/[0.08] pr-10" />
+                <button type="button" onClick={() => setShowToken(!showToken)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888] hover:text-[#f0f0f0]">
                   {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               <p className="text-xs text-[#888] mt-1">
-                Buat di{' '}
-                <a
-                  href="https://github.com/settings/tokens/new"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#e63946] hover:underline"
-                >
-                  github.com/settings/tokens
-                </a>
-                {' '}→ centang permission <code className="text-[#bf7fff]">repo</code>
+                Buat di <a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer" className="text-[#e63946] hover:underline">github.com/settings/tokens</a> → centang permission <code className="text-[#bf7fff]">repo</code>
               </p>
             </div>
           </div>
-          <Button type="submit" className="bg-[#7209b7] hover:bg-[#5a0791]">
-            <Save className="w-4 h-4 mr-1.5" />
-            Simpan Konfigurasi
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button type="submit" className="bg-[#7209b7] hover:bg-[#5a0791]">
+              <Save className="w-4 h-4 mr-1.5" />Simpan Konfigurasi
+            </Button>
+            {results.config && (
+              <span className="text-sm text-[#20c864] flex items-center gap-1.5">
+                <CheckCircle className="w-4 h-4" />{results.config.message}
+              </span>
+            )}
+          </div>
         </form>
       </div>
 
-      {/* Push Button */}
-      <div className="bg-[#14141f] border border-white/[0.08] rounded-xl p-6">
-        <h3 className="font-['Bebas_Neue'] text-lg tracking-wider text-[#f0f0f0] mb-2">Push ke GitHub</h3>
-        <p className="text-sm text-[#888] mb-5">
-          Semua data saat ini (anime, episode, donatur, pengaturan) akan ditulis ke{' '}
-          <code className="text-[#e63946]">src/data/default.ts</code> dan di-commit ke repo GitHub kamu.
-        </p>
-
-        {result && (
-          <div className={`flex items-start gap-3 p-4 rounded-xl mb-4 text-sm ${
-            result.success
-              ? 'bg-[#20c864]/10 border border-[#20c864]/30 text-[#20c864]'
-              : 'bg-[#e63946]/10 border border-[#e63946]/30 text-[#e63946]'
-          }`}>
-            {result.success
-              ? <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              : <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-            }
-            <div>
-              <p>{result.message}</p>
-              {result.commitUrl && (
-                <a
-                  href={result.commitUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#20c864] underline text-xs mt-1 inline-block"
-                >
-                  Lihat commit di GitHub →
-                </a>
-              )}
+      {/* Push Buttons */}
+      {!isConfigured ? (
+        <div className="bg-[#e63946]/10 border border-[#e63946]/30 rounded-xl p-4 text-sm text-[#e63946]">
+          ⚠️ Isi konfigurasi GitHub di atas sebelum push.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Settings, Anime, Donators */}
+          <div className="bg-[#14141f] border border-white/[0.08] rounded-xl p-5">
+            <h3 className="font-['Bebas_Neue'] text-lg tracking-wider text-[#f0f0f0] mb-4">Push Data Utama</h3>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { key: 'settings', label: 'settings.ts', fn: () => pushSettings(settings, config) },
+                { key: 'anime', label: 'anime.ts', fn: () => pushAnime(anime, config) },
+                { key: 'donators', label: 'donators.ts', fn: () => pushDonators(donators, config) },
+              ].map(({ key, label, fn }) => (
+                <div key={key} className="flex flex-col gap-1.5">
+                  <Button
+                    onClick={() => run(key, fn)}
+                    disabled={loadingKey === key}
+                    className="bg-[#e63946] hover:bg-[#ff4d5a] disabled:opacity-50"
+                  >
+                    {loadingKey === key
+                      ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" />Pushing...</>
+                      : <><Upload className="w-4 h-4 mr-1.5" />Push {label}</>
+                    }
+                  </Button>
+                  {results[key] && (
+                    <div className={`text-xs flex items-start gap-1 ${results[key].success ? 'text-[#20c864]' : 'text-[#e63946]'}`}>
+                      {results[key].success ? <CheckCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />}
+                      <span>
+                        {results[key].message}
+                        {results[key].commitUrl && <a href={results[key].commitUrl} target="_blank" rel="noopener noreferrer" className="underline ml-1">Lihat commit →</a>}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
-        )}
 
-        <Button
-          onClick={handlePush}
-          disabled={syncing || !formData.github_token || !formData.github_owner || !formData.github_repo}
-          className="bg-[#e63946] hover:bg-[#ff4d5a] disabled:opacity-50"
-        >
-          {syncing ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-              Sedang Push...
-            </>
-          ) : (
-            <>
-              <Upload className="w-4 h-4 mr-1.5" />
-              Push ke GitHub Sekarang
-            </>
-          )}
-        </Button>
-
-        {(!formData.github_token || !formData.github_owner || !formData.github_repo) && (
-          <p className="text-xs text-[#888] mt-3">
-            ⚠️ Isi konfigurasi GitHub di atas terlebih dahulu sebelum push.
-          </p>
-        )}
-      </div>
+          {/* Episodes per anime */}
+          <div className="bg-[#14141f] border border-white/[0.08] rounded-xl p-5">
+            <h3 className="font-['Bebas_Neue'] text-lg tracking-wider text-[#f0f0f0] mb-1">Push Episode per Anime</h3>
+            <p className="text-xs text-[#888] mb-4">Hanya file episode anime yang kamu pilih yang akan di-push ke GitHub.</p>
+            {episodeSlugs.length === 0 ? (
+              <p className="text-sm text-[#888]">Buka tab Episode terlebih dahulu untuk load data.</p>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {episodeSlugs.map(slug => {
+                  const animeData = anime.find(a => a.slug === slug);
+                  const key = `ep_${slug}`;
+                  return (
+                    <div key={slug} className="flex flex-col gap-1.5">
+                      <Button
+                        onClick={() => run(key, () => pushEpisodes(slug, episodeCache[slug], config))}
+                        disabled={loadingKey === key}
+                        variant="outline"
+                        className="border-white/[0.08] text-[#f0f0f0] hover:border-[#e63946] hover:text-[#e63946] disabled:opacity-50"
+                      >
+                        {loadingKey === key
+                          ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" />Pushing...</>
+                          : <><Upload className="w-4 h-4 mr-1.5" />{animeData?.title || slug}</>
+                        }
+                      </Button>
+                      {results[key] && (
+                        <div className={`text-xs flex items-start gap-1 ${results[key].success ? 'text-[#20c864]' : 'text-[#e63946]'}`}>
+                          {results[key].success ? <CheckCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />}
+                          <span>
+                            {results[key].message}
+                            {results[key].commitUrl && <a href={results[key].commitUrl} target="_blank" rel="noopener noreferrer" className="underline ml-1">Lihat commit →</a>}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
