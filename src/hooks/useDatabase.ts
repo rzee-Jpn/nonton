@@ -1,175 +1,224 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Database, Anime, Episode, Donator, SiteSettings } from '@/types';
-import { DEFAULT_DB } from '@/data/default';
+import type { Anime, Episode, Donator, SiteSettings } from '@/types';
+import DEFAULT_SETTINGS from '@/data/settings';
+import DEFAULT_ANIME from '@/data/anime';
+import DEFAULT_DONATORS from '@/data/donators';
 
-const STORAGE_KEY = 'axs_database';
+// ─── Storage keys ─────────────────────────────────────────────
+const KEY_SETTINGS  = 'axs_settings';
+const KEY_ANIME     = 'axs_anime';
+const KEY_DONATORS  = 'axs_donators';
+const KEY_EPISODES  = (slug: string) => `axs_ep_${slug}`;
+
+// ─── Vite glob — lazy-load tiap file episode secara terpisah ──
+const EPISODE_MODULES = import.meta.glob<{ default: Episode[] }>(
+  '../data/episodes/*.ts'
+);
+
+function slugToModuleKey(slug: string): string {
+  return `../data/episodes/${slug}.ts`;
+}
+
+// ─── Local storage helpers ────────────────────────────────────
+function loadFromStorage<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveToStorage(key: string, value: unknown) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+// ─────────────────────────────────────────────────────────────
 
 export function useDatabase() {
-  const [data, setData] = useState<Database>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        return { ...DEFAULT_DB, ...JSON.parse(stored) };
-      }
-    }
-    return DEFAULT_DB;
-  });
-
+  const [settings, setSettings] = useState<SiteSettings>(() =>
+    loadFromStorage(KEY_SETTINGS, DEFAULT_SETTINGS)
+  );
+  const [anime, setAnime] = useState<Anime[]>(() =>
+    loadFromStorage(KEY_ANIME, DEFAULT_ANIME)
+  );
+  const [donators, setDonators] = useState<Donator[]>(() =>
+    loadFromStorage(KEY_DONATORS, DEFAULT_DONATORS)
+  );
+  const [episodeCache, setEpisodeCache] = useState<Record<string, Episode[]>>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
-    setIsLoaded(true);
+  useEffect(() => { setIsLoaded(true); }, []);
+
+  // ── Load episode untuk 1 slug (lazy) ──────────────────────
+  const loadEpisodes = useCallback(async (slug: string): Promise<Episode[]> => {
+    // 1. Cek localStorage (user edits override file statis)
+    const local = localStorage.getItem(KEY_EPISODES(slug));
+    if (local) {
+      const parsed = JSON.parse(local) as Episode[];
+      setEpisodeCache(prev => ({ ...prev, [slug]: parsed }));
+      return parsed;
+    }
+
+    // 2. Lazy import dari file episode-nya
+    const moduleKey = slugToModuleKey(slug);
+    const loader = EPISODE_MODULES[moduleKey];
+    if (!loader) {
+      setEpisodeCache(prev => ({ ...prev, [slug]: [] }));
+      return [];
+    }
+
+    const mod = await loader();
+    const eps = mod.default ?? [];
+    setEpisodeCache(prev => ({ ...prev, [slug]: eps }));
+    return eps;
   }, []);
 
-  const saveData = useCallback((newData: Database) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-    setData(newData);
+  const getEpisodes = useCallback((slug: string): Episode[] => {
+    return episodeCache[slug] ?? [];
+  }, [episodeCache]);
+
+  const getEpisode = useCallback((slug: string, number: number): Episode | undefined => {
+    return episodeCache[slug]?.find(e => e.number === number);
+  }, [episodeCache]);
+
+  const getAnimeBySlug = useCallback((slug: string): Anime | undefined => {
+    return anime.find(a => a.slug === slug);
+  }, [anime]);
+
+  // ── Settings ──────────────────────────────────────────────
+  const updateSettings = useCallback((newSettings: Partial<SiteSettings>) => {
+    setSettings(prev => {
+      const next = { ...prev, ...newSettings };
+      saveToStorage(KEY_SETTINGS, next);
+      return next;
+    });
   }, []);
 
-  const updateSettings = useCallback((settings: Partial<SiteSettings>) => {
-    const newData = { ...data, settings: { ...data.settings, ...settings } };
-    saveData(newData);
-  }, [data, saveData]);
-
-  const addAnime = useCallback((anime: Omit<Anime, 'id'>) => {
-    const newAnime: Anime = { ...anime, id: Date.now() };
-    const newData = { 
-      ...data, 
-      anime: [...data.anime, newAnime],
-      episodes: { ...data.episodes, [anime.slug]: [] }
-    };
-    saveData(newData);
+  // ── Anime ─────────────────────────────────────────────────
+  const addAnime = useCallback((data: Omit<Anime, 'id'>) => {
+    const newAnime: Anime = { ...data, id: Date.now() };
+    setAnime(prev => {
+      const next = [...prev, newAnime];
+      saveToStorage(KEY_ANIME, next);
+      return next;
+    });
+    saveToStorage(KEY_EPISODES(data.slug), []);
+    setEpisodeCache(prev => ({ ...prev, [data.slug]: [] }));
     return newAnime;
-  }, [data, saveData]);
+  }, []);
 
-  const updateAnime = useCallback((id: number, anime: Partial<Anime>) => {
-    const newData = {
-      ...data,
-      anime: data.anime.map(a => a.id === id ? { ...a, ...anime } : a)
-    };
-    saveData(newData);
-  }, [data, saveData]);
+  const updateAnime = useCallback((id: number, data: Partial<Anime>) => {
+    setAnime(prev => {
+      const next = prev.map(a => (a.id === id ? { ...a, ...data } : a));
+      saveToStorage(KEY_ANIME, next);
+      return next;
+    });
+  }, []);
 
   const deleteAnime = useCallback((id: number) => {
-    const anime = data.anime.find(a => a.id === id);
-    if (anime) {
-      const { [anime.slug]: _, ...remainingEpisodes } = data.episodes;
-      const newData = {
-        ...data,
-        anime: data.anime.filter(a => a.id !== id),
-        episodes: remainingEpisodes
-      };
-      saveData(newData);
-    }
-  }, [data, saveData]);
-
-  const addEpisode = useCallback((slug: string, episode: Omit<Episode, 'number'>, number?: number) => {
-    const episodes = data.episodes[slug] || [];
-    const newEpisode: Episode = {
-      ...episode,
-      number: number || (episodes.length > 0 ? Math.max(...episodes.map(e => e.number)) + 1 : 1)
-    };
-    const newEpisodes = [...episodes, newEpisode].sort((a, b) => a.number - b.number);
-    const newData = {
-      ...data,
-      episodes: { ...data.episodes, [slug]: newEpisodes }
-    };
-    saveData(newData);
-    return newEpisode;
-  }, [data, saveData]);
-
-  const updateEpisode = useCallback((slug: string, number: number, episode: Partial<Episode>) => {
-    const episodes = data.episodes[slug] || [];
-    const newData = {
-      ...data,
-      episodes: {
-        ...data.episodes,
-        [slug]: episodes.map(e => e.number === number ? { ...e, ...episode } : e)
+    setAnime(prev => {
+      const target = prev.find(a => a.id === id);
+      if (target) {
+        localStorage.removeItem(KEY_EPISODES(target.slug));
+        setEpisodeCache(c => {
+          const copy = { ...c };
+          delete copy[target.slug];
+          return copy;
+        });
       }
-    };
-    saveData(newData);
-  }, [data, saveData]);
-
-  const deleteEpisode = useCallback((slug: string, number: number) => {
-    const episodes = data.episodes[slug] || [];
-    const newData = {
-      ...data,
-      episodes: {
-        ...data.episodes,
-        [slug]: episodes.filter(e => e.number !== number)
-      }
-    };
-    saveData(newData);
-  }, [data, saveData]);
-
-  const addDonator = useCallback((donator: Omit<Donator, 'id' | 'date'>) => {
-    const newDonator: Donator = {
-      ...donator,
-      id: Date.now(),
-      date: new Date().toISOString().slice(0, 10)
-    };
-    const newData = {
-      ...data,
-      donators: [newDonator, ...data.donators]
-    };
-    saveData(newData);
-    return newDonator;
-  }, [data, saveData]);
-
-  const deleteDonator = useCallback((id: number) => {
-    const newData = {
-      ...data,
-      donators: data.donators.filter(d => d.id !== id)
-    };
-    saveData(newData);
-  }, [data, saveData]);
-
-  const resetToDefault = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    setData(DEFAULT_DB);
+      const next = prev.filter(a => a.id !== id);
+      saveToStorage(KEY_ANIME, next);
+      return next;
+    });
   }, []);
 
-  const getAnimeBySlug = useCallback((slug: string) => {
-    return data.anime.find(a => a.slug === slug);
-  }, [data.anime]);
+  // ── Episodes ──────────────────────────────────────────────
+  const addEpisode = useCallback((slug: string, episode: Omit<Episode, 'number'>, number?: number) => {
+    setEpisodeCache(prev => {
+      const current = prev[slug] ?? [];
+      const newNum = number ?? (current.length > 0
+        ? Math.max(...current.map(e => e.number)) + 1
+        : 1);
+      const newEp: Episode = { ...episode, number: newNum };
+      const next = [...current, newEp].sort((a, b) => a.number - b.number);
+      saveToStorage(KEY_EPISODES(slug), next);
+      return { ...prev, [slug]: next };
+    });
+  }, []);
 
-  const getEpisodes = useCallback((slug: string) => {
-    return data.episodes[slug] || [];
-  }, [data.episodes]);
+  const updateEpisode = useCallback((slug: string, number: number, episode: Partial<Episode>) => {
+    setEpisodeCache(prev => {
+      const current = prev[slug] ?? [];
+      const next = current.map(e => (e.number === number ? { ...e, ...episode } : e));
+      saveToStorage(KEY_EPISODES(slug), next);
+      return { ...prev, [slug]: next };
+    });
+  }, []);
 
-  const getEpisode = useCallback((slug: string, number: number) => {
-    return data.episodes[slug]?.find(e => e.number === number);
-  }, [data.episodes]);
+  const deleteEpisode = useCallback((slug: string, number: number) => {
+    setEpisodeCache(prev => {
+      const current = prev[slug] ?? [];
+      const next = current.filter(e => e.number !== number);
+      saveToStorage(KEY_EPISODES(slug), next);
+      return { ...prev, [slug]: next };
+    });
+  }, []);
 
-  const getAllGenres = useCallback(() => {
-    const genres = new Set<string>();
-    data.anime.forEach(a => a.genres.forEach(g => genres.add(g)));
-    return Array.from(genres).sort();
-  }, [data.anime]);
+  // ── Donators ──────────────────────────────────────────────
+  const addDonator = useCallback((data: Omit<Donator, 'id' | 'date'>) => {
+    const newDonator: Donator = {
+      ...data,
+      id: Date.now(),
+      date: new Date().toISOString().slice(0, 10),
+    };
+    setDonators(prev => {
+      const next = [newDonator, ...prev];
+      saveToStorage(KEY_DONATORS, next);
+      return next;
+    });
+    return newDonator;
+  }, []);
 
-  const searchAnime = useCallback((query: string) => {
-    const q = query.toLowerCase();
-    return data.anime.filter(a => 
-      a.title.toLowerCase().includes(q) ||
-      a.genres.some(g => g.toLowerCase().includes(q))
-    );
-  }, [data.anime]);
+  const deleteDonator = useCallback((id: number) => {
+    setDonators(prev => {
+      const next = prev.filter(d => d.id !== id);
+      saveToStorage(KEY_DONATORS, next);
+      return next;
+    });
+  }, []);
 
+  // ── Reset ─────────────────────────────────────────────────
+  const resetToDefault = useCallback(() => {
+    [KEY_SETTINGS, KEY_ANIME, KEY_DONATORS].forEach(k => localStorage.removeItem(k));
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('axs_ep_'))
+      .forEach(k => localStorage.removeItem(k));
+    setSettings(DEFAULT_SETTINGS);
+    setAnime(DEFAULT_ANIME);
+    setDonators(DEFAULT_DONATORS);
+    setEpisodeCache({});
+  }, []);
+
+  // ── Computed ──────────────────────────────────────────────
   const getTotalEpisodes = useCallback(() => {
-    return Object.values(data.episodes).reduce((sum, eps) => sum + eps.length, 0);
-  }, [data.episodes]);
+    return Object.values(episodeCache).reduce((sum, eps) => sum + eps.length, 0);
+  }, [episodeCache]);
 
   const getTotalDonations = useCallback(() => {
-    return data.donators.reduce((sum, d) => sum + d.amount, 0);
-  }, [data.donators]);
+    return donators.reduce((sum, d) => sum + d.amount, 0);
+  }, [donators]);
 
   return {
-    data,
     isLoaded,
-    settings: data.settings,
-    anime: data.anime,
-    donators: data.donators,
-    saveData,
+    settings,
+    anime,
+    donators,
+    episodeCache,
+    loadEpisodes,
+    getEpisodes,
+    getEpisode,
+    getAnimeBySlug,
     updateSettings,
     addAnime,
     updateAnime,
@@ -180,12 +229,7 @@ export function useDatabase() {
     addDonator,
     deleteDonator,
     resetToDefault,
-    getAnimeBySlug,
-    getEpisodes,
-    getEpisode,
-    getAllGenres,
-    searchAnime,
     getTotalEpisodes,
-    getTotalDonations
+    getTotalDonations,
   };
 }
