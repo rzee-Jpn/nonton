@@ -31,7 +31,7 @@ export default DEFAULT_DONATORS;
 `;
 }
 
-export function generateEpisodeTs(slug: string, episodes: Episode[]): string {
+export function generateEpisodeTs(_slug: string, episodes: Episode[]): string {
   return `import type { Episode } from '@/types';
 
 const episodes: Episode[] = ${JSON.stringify(episodes, null, 2)};
