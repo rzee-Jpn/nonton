@@ -54,6 +54,11 @@ export interface SiteSettings {
   qris_image: string;
   admin_password: string;
   featured_slug: string;
+  // GitHub Sync
+  github_token: string;
+  github_owner: string;
+  github_repo: string;
+  github_branch: string;
 }
 
 export interface Database {
