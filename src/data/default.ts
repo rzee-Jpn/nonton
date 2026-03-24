@@ -11,7 +11,7 @@ export const DEFAULT_DB: Database = {
     "whatsapp_number": "6285000000001",
     "whatsapp_msg": "Halo, saya ingin donasi untuk support AnimeXStream 🙏",
     "qris_image": "",
-    "admin_password": "admin123",
+    "admin_password": "lastproject00",
     "featured_slug": "naruto",
     "github_owner": "rzee-jpn",
     "github_repo": "nonton",
@@ -217,11 +217,7 @@ export const DEFAULT_DB: Database = {
         "servers": [
           {
             "name": "YouTube",
-            "url": "https://www.youtube.com/embed/dQw4w9WgXcQ"
-          },
-          {
-            "name": "Doodstream",
-            "url": "https://dood.watch/e/sample"
+            "url": "https://youtu.be/6-4Ft9_11xQ"
           }
         ]
       },
@@ -232,7 +228,7 @@ export const DEFAULT_DB: Database = {
         "servers": [
           {
             "name": "YouTube",
-            "url": "https://www.youtube.com/embed/dQw4w9WgXcQ"
+            "url": "https://youtu.be/xkyFS7UxkBQ"
           }
         ]
       },
@@ -243,11 +239,7 @@ export const DEFAULT_DB: Database = {
         "servers": [
           {
             "name": "YouTube",
-            "url": "https://www.youtube.com/embed/dQw4w9WgXcQ"
-          },
-          {
-            "name": "VK",
-            "url": "https://vk.com/video_ext.php?oid=-22500&id=456245943&hash=b3ae4b4143e3e0be"
+            "url": "https://youtu.be/nZYOMfXxDlo"
           }
         ]
       }
