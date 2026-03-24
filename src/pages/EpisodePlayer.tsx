@@ -11,6 +11,7 @@ interface EpisodePlayerProps {
   getAnimeBySlug: (slug: string) => Anime | undefined;
   getEpisodes: (slug: string) => Episode[];
   getEpisode: (slug: string, number: number) => Episode | undefined;
+  loadEpisodes: (slug: string) => Promise<Episode[]>;
   donators: Donator[];
   setLastWatchedEpisode: (slug: string, episode: number) => void;
   markAsWatched: (slug: string, episode: number) => void;
@@ -23,6 +24,7 @@ export function EpisodePlayer({
   getAnimeBySlug,
   getEpisodes,
   getEpisode,
+  loadEpisodes,
   donators,
   setLastWatchedEpisode,
   markAsWatched,
@@ -33,6 +35,11 @@ export function EpisodePlayer({
   const navigate = useNavigate();
   const [activeServer, setActiveServer] = useState(preferredServer);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Lazy load episodes saat halaman dibuka
+  useEffect(() => {
+    if (slug) loadEpisodes(slug);
+  }, [slug, loadEpisodes]);
 
   const anime = slug ? getAnimeBySlug(slug) : undefined;
   const episodes = slug ? getEpisodes(slug) : [];
