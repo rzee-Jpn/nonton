@@ -8,7 +8,12 @@ import DEFAULT_DONATORS from '@/data/donators';
 const KEY_SETTINGS  = 'axs_settings';
 const KEY_ANIME     = 'axs_anime';
 const KEY_DONATORS  = 'axs_donators';
+const KEY_DB_VERSION = 'axs_db_version';
 const KEY_EPISODES  = (slug: string) => `axs_ep_${slug}`;
+
+// ─── DB Version — bump this whenever DEFAULT_ANIME changes ────
+// This triggers a merge of new default anime into stored data.
+const DB_VERSION = 2;
 
 // ─── Vite glob — lazy-load tiap file episode secara terpisah ──
 const EPISODE_MODULES = import.meta.glob<{ default: Episode[] }>(
@@ -30,7 +35,38 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 }
 
 function saveToStorage(key: string, value: unknown) {
-  localStorage.setItem(key, JSON.stringify(value));
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.warn('localStorage write failed:', e);
+  }
+}
+
+/**
+ * Merge strategy: for each default anime, if it doesn't exist in the
+ * stored list (matched by slug), inject it. This ensures new entries
+ * added to DEFAULT_ANIME always appear — even for returning users
+ * whose localStorage was populated before the new entry was added.
+ */
+function mergeAnimeWithDefaults(stored: Anime[]): Anime[] {
+  const slugSet = new Set(stored.map(a => a.slug));
+  const newEntries = DEFAULT_ANIME.filter(a => !slugSet.has(a.slug));
+  if (newEntries.length === 0) return stored;
+  return [...stored, ...newEntries];
+}
+
+/**
+ * Run on first mount. If the stored DB version is behind, merge
+ * any missing default anime into the stored list and update the version.
+ */
+function migrateIfNeeded(storedAnime: Anime[]): Anime[] {
+  const storedVersion = parseInt(localStorage.getItem(KEY_DB_VERSION) ?? '0', 10);
+  if (storedVersion >= DB_VERSION) return storedAnime;
+
+  const merged = mergeAnimeWithDefaults(storedAnime);
+  saveToStorage(KEY_ANIME, merged);
+  saveToStorage(KEY_DB_VERSION, DB_VERSION);
+  return merged;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -39,9 +75,12 @@ export function useDatabase() {
   const [settings, setSettings] = useState<SiteSettings>(() =>
     loadFromStorage(KEY_SETTINGS, DEFAULT_SETTINGS)
   );
-  const [anime, setAnime] = useState<Anime[]>(() =>
-    loadFromStorage(KEY_ANIME, DEFAULT_ANIME)
-  );
+
+  const [anime, setAnime] = useState<Anime[]>(() => {
+    const stored = loadFromStorage(KEY_ANIME, DEFAULT_ANIME);
+    return migrateIfNeeded(stored);
+  });
+
   const [donators, setDonators] = useState<Donator[]>(() =>
     loadFromStorage(KEY_DONATORS, DEFAULT_DONATORS)
   );
@@ -55,9 +94,14 @@ export function useDatabase() {
     // 1. Cek localStorage (user edits override file statis)
     const local = localStorage.getItem(KEY_EPISODES(slug));
     if (local) {
-      const parsed = JSON.parse(local) as Episode[];
-      setEpisodeCache(prev => ({ ...prev, [slug]: parsed }));
-      return parsed;
+      try {
+        const parsed = JSON.parse(local) as Episode[];
+        setEpisodeCache(prev => ({ ...prev, [slug]: parsed }));
+        return parsed;
+      } catch {
+        // corrupted data — fall through to module load
+        localStorage.removeItem(KEY_EPISODES(slug));
+      }
     }
 
     // 2. Lazy import dari file episode-nya
@@ -68,10 +112,15 @@ export function useDatabase() {
       return [];
     }
 
-    const mod = await loader();
-    const eps = mod.default ?? [];
-    setEpisodeCache(prev => ({ ...prev, [slug]: eps }));
-    return eps;
+    try {
+      const mod = await loader();
+      const eps = mod.default ?? [];
+      setEpisodeCache(prev => ({ ...prev, [slug]: eps }));
+      return eps;
+    } catch {
+      setEpisodeCache(prev => ({ ...prev, [slug]: [] }));
+      return [];
+    }
   }, []);
 
   const getEpisodes = useCallback((slug: string): Episode[] => {
@@ -170,6 +219,7 @@ export function useDatabase() {
     const newDonator: Donator = {
       ...data,
       id: Date.now(),
+      amount: Number(data.amount) || 0,
       date: new Date().toISOString().slice(0, 10),
     };
     setDonators(prev => {
@@ -190,7 +240,9 @@ export function useDatabase() {
 
   // ── Reset ─────────────────────────────────────────────────
   const resetToDefault = useCallback(() => {
-    [KEY_SETTINGS, KEY_ANIME, KEY_DONATORS].forEach(k => localStorage.removeItem(k));
+    [KEY_SETTINGS, KEY_ANIME, KEY_DONATORS, KEY_DB_VERSION].forEach(k =>
+      localStorage.removeItem(k)
+    );
     Object.keys(localStorage)
       .filter(k => k.startsWith('axs_ep_'))
       .forEach(k => localStorage.removeItem(k));
@@ -198,6 +250,8 @@ export function useDatabase() {
     setAnime(DEFAULT_ANIME);
     setDonators(DEFAULT_DONATORS);
     setEpisodeCache({});
+    // Write fresh version after reset
+    saveToStorage(KEY_DB_VERSION, DB_VERSION);
   }, []);
 
   // ── Computed ──────────────────────────────────────────────
@@ -206,7 +260,7 @@ export function useDatabase() {
   }, [episodeCache]);
 
   const getTotalDonations = useCallback(() => {
-    return donators.reduce((sum, d) => sum + d.amount, 0);
+    return donators.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
   }, [donators]);
 
   return {
