@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Home, StepBack, StepForward, Server, Loader2 } from 'lucide-react';
+import { Home, StepBack, StepForward, Server } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { VideoPlayer } from '@/components/ui-custom/VideoPlayer';
 import { DonateSection } from '@/components/ui-custom/DonateSection';
 import { DonatorList } from '@/components/ui-custom/DonatorList';
 import type { Anime, Episode, SiteSettings, Donator } from '@/types';
@@ -29,25 +30,23 @@ export function EpisodePlayer({
   setLastWatchedEpisode,
   markAsWatched,
   preferredServer,
-  setServerPreference
+  setServerPreference,
 }: EpisodePlayerProps) {
   const { slug, number } = useParams<{ slug: string; number: string }>();
   const navigate = useNavigate();
   const [activeServer, setActiveServer] = useState(preferredServer);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Lazy load episodes saat halaman dibuka
   useEffect(() => {
     if (slug) loadEpisodes(slug);
   }, [slug, loadEpisodes]);
 
-  const anime = slug ? getAnimeBySlug(slug) : undefined;
+  const anime    = slug ? getAnimeBySlug(slug) : undefined;
   const episodes = slug ? getEpisodes(slug) : [];
-  const episode = slug && number ? getEpisode(slug, parseInt(number)) : undefined;
+  const episode  = slug && number ? getEpisode(slug, parseInt(number)) : undefined;
 
-  const currentIndex = episode ? episodes.findIndex(e => e.number === episode.number) : -1;
-  const prevEpisode = currentIndex > 0 ? episodes[currentIndex - 1] : null;
-  const nextEpisode = currentIndex < episodes.length - 1 ? episodes[currentIndex + 1] : null;
+  const currentIndex = episode ? episodes.findIndex((e) => e.number === episode.number) : -1;
+  const prevEpisode  = currentIndex > 0 ? episodes[currentIndex - 1] : null;
+  const nextEpisode  = currentIndex < episodes.length - 1 ? episodes[currentIndex + 1] : null;
 
   useEffect(() => {
     if (anime && episode) {
@@ -66,7 +65,6 @@ export function EpisodePlayer({
   const handleServerChange = (index: number) => {
     setActiveServer(index);
     setServerPreference(index);
-    setIsLoading(true);
   };
 
   if (!anime || !episode) {
@@ -83,6 +81,7 @@ export function EpisodePlayer({
   }
 
   const currentServer = episode.servers[activeServer];
+  const resumeKey = `${anime.slug}_ep${episode.number}`;
 
   return (
     <div className="min-h-screen bg-[#08080f]">
@@ -90,7 +89,9 @@ export function EpisodePlayer({
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#08080f]/92 backdrop-blur-xl border-b border-white/[0.08] h-[60px] px-[4%] flex items-center justify-between">
         <Link to="/" className="font-['Bebas_Neue'] text-2xl tracking-wider text-[#f0f0f0]">
           {settings.site_name.slice(0, Math.floor(settings.site_name.length / 2))}
-          <span className="text-[#e63946]">{settings.site_name[Math.floor(settings.site_name.length / 2)]}</span>
+          <span className="text-[#e63946]">
+            {settings.site_name[Math.floor(settings.site_name.length / 2)]}
+          </span>
           {settings.site_name.slice(Math.floor(settings.site_name.length / 2) + 1)}
         </Link>
         <div className="flex items-center gap-3.5">
@@ -109,24 +110,31 @@ export function EpisodePlayer({
 
       {/* Main Content */}
       <div className="mt-[60px] grid grid-cols-1 lg:grid-cols-[1fr_360px] min-h-[calc(100vh-60px)]">
+
         {/* Player Column */}
         <div className="p-5 lg:pl-[4%] lg:pr-5">
+
           {/* Player */}
           <div className="relative bg-black rounded-xl overflow-hidden aspect-video border border-white/[0.08]">
-            {isLoading && (
-              <div className="absolute inset-0 bg-black flex flex-col items-center justify-center gap-3.5 z-10">
-                <Loader2 className="w-12 h-12 text-[#e63946] animate-spin" />
-                <span className="text-sm text-[#888]">Memuat video...</span>
+            {currentServer?.url ? (
+              <VideoPlayer
+                key={`${currentServer.url}-${activeServer}`}
+                url={currentServer.url}
+                resumeKey={resumeKey}
+                className="w-full h-full"
+                onEnded={() => {
+                  if (nextEpisode) {
+                    setTimeout(() => {
+                      navigate(`/episode/${anime.slug}/${nextEpisode.number}`);
+                    }, 3000);
+                  }
+                }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-black">
+                <p className="text-[#888] text-sm">Server tidak tersedia</p>
               </div>
             )}
-            <iframe
-              src={currentServer?.url}
-              className="w-full h-full"
-              allowFullScreen
-              allow="autoplay; fullscreen"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox"
-              onLoad={() => setIsLoading(false)}
-            />
           </div>
 
           {/* Episode Header */}
@@ -143,27 +151,23 @@ export function EpisodePlayer({
               {prevEpisode ? (
                 <Link to={`/episode/${anime.slug}/${prevEpisode.number}`}>
                   <Button variant="outline" className="border-white/[0.08] text-[#f0f0f0] hover:border-[#e63946] hover:text-[#e63946]">
-                    <StepBack className="w-4 h-4 mr-1.5" />
-                    Prev
+                    <StepBack className="w-4 h-4 mr-1.5" />Prev
                   </Button>
                 </Link>
               ) : (
                 <Button variant="outline" disabled className="border-white/[0.08] text-[#888] opacity-50">
-                  <StepBack className="w-4 h-4 mr-1.5" />
-                  Prev
+                  <StepBack className="w-4 h-4 mr-1.5" />Prev
                 </Button>
               )}
               {nextEpisode ? (
                 <Link to={`/episode/${anime.slug}/${nextEpisode.number}`}>
                   <Button variant="outline" className="border-white/[0.08] text-[#f0f0f0] hover:border-[#e63946] hover:text-[#e63946]">
-                    Next
-                    <StepForward className="w-4 h-4 ml-1.5" />
+                    Next<StepForward className="w-4 h-4 ml-1.5" />
                   </Button>
                 </Link>
               ) : (
                 <Button variant="outline" disabled className="border-white/[0.08] text-[#888] opacity-50">
-                  Next
-                  <StepForward className="w-4 h-4 ml-1.5" />
+                  Next<StepForward className="w-4 h-4 ml-1.5" />
                 </Button>
               )}
             </div>
@@ -210,9 +214,7 @@ export function EpisodePlayer({
         {/* Sidebar */}
         <div className="hidden lg:block p-5 pl-4 pr-[4%] border-l border-white/[0.08] bg-[#0e0e1a]">
           <DonateSection settings={settings} />
-          
           <hr className="border-white/[0.08] my-5" />
-          
           <div>
             <h3 className="font-['Bebas_Neue'] text-xl tracking-wider text-[#f0f0f0] mb-1">Donatur Bulan Ini</h3>
             <p className="text-xs text-[#888] mb-4">Terima kasih telah mendukung kami!</p>
