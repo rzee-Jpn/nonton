@@ -22,15 +22,26 @@ export function Home({ settings, anime, totalEpisodes }: HomeProps) {
   }, [anime, settings.featured_slug]);
 
   const allGenres = useMemo(() => {
-    const genres = new Set<string>();
-    anime.forEach(a => a.genres.forEach(g => genres.add(g)));
-    return ['all', ...Array.from(genres).sort()];
+    const genreMap = new Map<string, string>(); // lowercase → display
+    anime.forEach(a =>
+      a.genres.forEach(g => {
+        const key = g.toLowerCase();
+        if (!genreMap.has(key)) {
+          // Capitalize first letter for display
+          genreMap.set(key, g.charAt(0).toUpperCase() + g.slice(1));
+        }
+      })
+    );
+    return ['all', ...Array.from(genreMap.values()).sort()];
   }, [anime]);
 
   const filteredAnime = useMemo(() => {
     return anime.filter(a => {
-      const matchGenre = activeGenre === 'all' || a.genres.includes(activeGenre);
-      const matchSearch = !searchQuery || a.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchGenre =
+        activeGenre === 'all' ||
+        a.genres.some(g => g.toLowerCase() === activeGenre.toLowerCase());
+      const matchSearch =
+        !searchQuery || a.title.toLowerCase().includes(searchQuery.toLowerCase());
       return matchGenre && matchSearch;
     });
   }, [anime, activeGenre, searchQuery]);
