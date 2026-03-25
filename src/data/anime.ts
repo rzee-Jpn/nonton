@@ -121,11 +121,11 @@ const DEFAULT_ANIME: Anime[] = [
     "trailer": ""
   },
   {
-    "title": "Spongebob Squarepants ",
-    "slug": "spongebob ",
+    "title": "Spongebob Squarepants",
+    "slug": "spongebob",
     "cover": "https://static.wikia.nocookie.net/spongebob/images/3/3a/SBPSP1.jpg/revision/latest/scale-to-width-down/250?cb=20160807184109",
     "banner": "https://static.wikia.nocookie.net/spongebob/images/3/3a/SBPSP1.jpg/revision/latest/scale-to-width-down/250?cb=20160807184109",
-    "studio": "Nickelodeon ",
+    "studio": "Nickelodeon",
     "status": "Completed",
     "total_episodes": 1,
     "year": 1999,
