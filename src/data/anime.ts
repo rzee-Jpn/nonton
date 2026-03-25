@@ -9,12 +9,7 @@ const DEFAULT_ANIME: Anime[] = [
     "banner": "https://cdn.myanimelist.net/images/anime/13/17405l.jpg",
     "status": "Completed",
     "total_episodes": 220,
-    "genres": [
-      "Action",
-      "Adventure",
-      "Comedy",
-      "Shounen"
-    ],
+    "genres": ["Action", "Adventure", "Comedy", "Shounen"],
     "year": 2002,
     "studio": "Studio Pierrot",
     "rating": "8.4",
@@ -29,12 +24,7 @@ const DEFAULT_ANIME: Anime[] = [
     "banner": "https://cdn.myanimelist.net/images/anime/10/47347l.jpg",
     "status": "Completed",
     "total_episodes": 87,
-    "genres": [
-      "Action",
-      "Drama",
-      "Fantasy",
-      "Military"
-    ],
+    "genres": ["Action", "Drama", "Fantasy", "Military"],
     "year": 2013,
     "studio": "MAPPA",
     "rating": "9.1",
@@ -49,12 +39,7 @@ const DEFAULT_ANIME: Anime[] = [
     "banner": "https://cdn.myanimelist.net/images/anime/1286/99889l.jpg",
     "status": "Ongoing",
     "total_episodes": 44,
-    "genres": [
-      "Action",
-      "Fantasy",
-      "Historical",
-      "Shounen"
-    ],
+    "genres": ["Action", "Fantasy", "Historical", "Shounen"],
     "year": 2019,
     "studio": "ufotable",
     "rating": "8.7",
@@ -69,12 +54,7 @@ const DEFAULT_ANIME: Anime[] = [
     "banner": "https://cdn.myanimelist.net/images/anime/6/73245l.jpg",
     "status": "Ongoing",
     "total_episodes": 1100,
-    "genres": [
-      "Action",
-      "Adventure",
-      "Comedy",
-      "Fantasy"
-    ],
+    "genres": ["Action", "Adventure", "Comedy", "Fantasy"],
     "year": 1999,
     "studio": "Toei Animation",
     "rating": "8.7",
@@ -89,12 +69,7 @@ const DEFAULT_ANIME: Anime[] = [
     "banner": "https://cdn.myanimelist.net/images/anime/1171/109222l.jpg",
     "status": "Ongoing",
     "total_episodes": 48,
-    "genres": [
-      "Action",
-      "Horror",
-      "Supernatural",
-      "Shounen"
-    ],
+    "genres": ["Action", "Horror", "Supernatural", "Shounen"],
     "year": 2020,
     "studio": "MAPPA",
     "rating": "8.6",
@@ -109,11 +84,7 @@ const DEFAULT_ANIME: Anime[] = [
     "banner": "https://cdn.myanimelist.net/images/anime/3/40451l.jpg",
     "status": "Completed",
     "total_episodes": 366,
-    "genres": [
-      "Action",
-      "Adventure",
-      "Supernatural"
-    ],
+    "genres": ["Action", "Adventure", "Supernatural"],
     "year": 2004,
     "studio": "Studio Pierrot",
     "rating": "8.1",
@@ -121,23 +92,19 @@ const DEFAULT_ANIME: Anime[] = [
     "trailer": ""
   },
   {
-    "title": "Spongebob Squarepants",
+    "id": 7,
+    "title": "SpongeBob SquarePants",
     "slug": "spongebob",
-    "cover": "https://static.wikia.nocookie.net/spongebob/images/3/3a/SBPSP1.jpg/revision/latest/scale-to-width-down/250?cb=20160807184109",
-    "banner": "https://static.wikia.nocookie.net/spongebob/images/3/3a/SBPSP1.jpg/revision/latest/scale-to-width-down/250?cb=20160807184109",
-    "studio": "Nickelodeon",
+    "cover": "https://m.media-amazon.com/images/M/MV5BNTMwNjYxMTMtOGM3Ni00MDQzLWIyNmMtZTY3NTI0OTkzMzBhXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
+    "banner": "https://m.media-amazon.com/images/M/MV5BNTMwNjYxMTMtOGM3Ni00MDQzLWIyNmMtZTY3NTI0OTkzMzBhXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
     "status": "Completed",
-    "total_episodes": 1,
+    "total_episodes": 41,
+    "genres": ["Comedy", "Adventure", "Fantasy"],
     "year": 1999,
+    "studio": "Nickelodeon",
     "rating": "8.2",
-    "genres": [
-      "Comedy",
-      "adventure",
-      "fantasy"
-    ],
-    "description": "SpongeBob SquarePants adalah serial animasi komedi tentang spons laut kuning ceria yang tinggal di dalam nanas, kota Bikini Bottom. Bekerja sebagai koki di Krusty Krab, SpongeBob menjalani petualangan kocak bersama sahabatnya, Patrick Star (bintang laut), dan tetangganya yang pemarah, Squidward, sambil melindungi resep Krabby Patty dari Plankton. ",
-    "trailer": "",
-    "id": 1774403149494
+    "description": "SpongeBob SquarePants adalah serial animasi komedi tentang spons laut kuning ceria yang tinggal di dalam nanas, kota Bikini Bottom. Bekerja sebagai koki di Krusty Krab, SpongeBob menjalani petualangan kocak bersama sahabatnya Patrick Star, dan tetangganya yang pemarah Squidward, sambil melindungi resep Krabby Patty dari Plankton.",
+    "trailer": ""
   }
 ];
 
