@@ -7,7 +7,7 @@ const episodes: Episode[] = [
     "servers": [
       {
         "name": "Facebook",
-        "url": "https://www.facebook.com/share/v/1BENh4ngDP/"
+        "url": "https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/share/v/1BENh4ngDP/"
       }
     ],
     "number": 1
