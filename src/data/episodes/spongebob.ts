@@ -2,8 +2,8 @@ import type { Episode } from '@/types';
 
 const episodes: Episode[] = [
   {
-    "title": "Spongebob first a",
-    "description": "Lorem ipsum dolor sit amer",
+    "title": "Tes ter",
+    "description": "SpongeBob SquarePants adalah serial animasi komedi tentang spons laut kuning ceria yang tinggal di dalam nanas, kota Bikini Bottom. Bekerja sebagai koki di Krusty Krab, SpongeBob menjalani petualangan kocak bersama sahabatnya, Patrick Star (bintang laut), dan tetangganya yang pemarah, Squidward, sambil melindungi resep Krabby Patty dari Plankton. ",
     "servers": [
       {
         "name": "Facebook",
