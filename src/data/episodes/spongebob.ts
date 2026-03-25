@@ -7,7 +7,7 @@ const episodes: Episode[] = [
     "servers": [
       {
         "name": "Facebook",
-        "url": "https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/share/v/1BENh4ngDP/"
+        "url": "https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/Dailycaptionvideos/videos/spongebob-bahasa-indonesia-1-penny/5389366881094124/"
       }
     ],
     "number": 1
