@@ -52,7 +52,10 @@ function isHLSUrl(url: string): boolean {
   return url.split('?')[0].toLowerCase().endsWith('.m3u8');
 }
 
-async function loadHlsJs(): Promise<typeof window.Hls> {
+// FIX 1: Ganti return type dari `Promise<typeof window.Hls>` → `Promise<any>`
+// karena TypeScript tidak mengenal `Hls` pada tipe Window secara default.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function loadHlsJs(): Promise<any> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((window as any).Hls) return (window as any).Hls;
   return new Promise((resolve, reject) => {
@@ -219,7 +222,10 @@ function NativePlayer({
             hlsRef.current = hls;
             hls.loadSource(url);
             hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            // FIX 2: Tambahkan parameter `_event` agar sesuai signature callback hls.js
+            // yang mengharapkan minimal 1 argumen (event name).
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            hls.on(Hls.Events.MANIFEST_PARSED, (_event: any) => {
               applyResume();
             });
             hls.on(Hls.Events.ERROR, (_: unknown, data: { fatal: boolean }) => {
