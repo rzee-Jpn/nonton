@@ -157,6 +157,23 @@ const DEFAULT_ANIME: Anime[] = [
     "description": "Shinchan menceritakan tentang keseharian Shinnosuke \"Shinchan\" Nohara, anak TK berusia 5 tahun yang nakal, lucu, genit, dan sering menjahili orang tua serta gurunya. Berlatar di Kasukabe, Jepang, cerita ini menyoroti kekacauan konyol yang ia buat bersama keluarga (Misae, Hiroshi, Himawari), anjingnya (Shiro), dan teman-temannya. ",
     "trailer": "",
     "id": 1774530890915
+  },
+  {
+    "title": "Berhenti Jadi bucin hidupku malah mewah",
+    "slug": "Santoso",
+    "cover": "https://hwztchapter.dramaboxdb.com/data/cppartner/4x2/42x0/420x0/42000003451/42000003451.jpg?t=1767604240602",
+    "banner": "https://hwztchapter.dramaboxdb.com/data/cppartner/4x2/42x0/420x0/42000003451/42000003451.jpg?t=1767604240602",
+    "studio": "-",
+    "status": "Completed",
+    "total_episodes": 1,
+    "year": 2026,
+    "rating": "5.5",
+    "genres": [
+      "Slice of life"
+    ],
+    "description": "Nxislspcjkslsxnudnsndb",
+    "trailer": "",
+    "id": 1774552070939
   }
 ];
 
