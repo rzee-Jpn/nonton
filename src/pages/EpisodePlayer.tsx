@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Home, StepBack, StepForward, Server } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,17 @@ export function EpisodePlayer({
   const { slug, number } = useParams<{ slug: string; number: string }>();
   const navigate = useNavigate();
   const [activeServer, setActiveServer] = useState(preferredServer);
+
+  // FIX: preferredServer is hydrated from localStorage asynchronously (via
+  // useEffect in useWatchHistory), so the initial useState(preferredServer)
+  // always captures 0. Sync once when the real value arrives.
+  const didSyncServer = useRef(false);
+  useEffect(() => {
+    if (!didSyncServer.current && preferredServer !== 0) {
+      setActiveServer(preferredServer);
+      didSyncServer.current = true;
+    }
+  }, [preferredServer]);
 
   useEffect(() => {
     if (slug) loadEpisodes(slug);
