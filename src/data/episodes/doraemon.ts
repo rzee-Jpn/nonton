@@ -1,17 +1,41 @@
 import type { Episode } from '@/types';
 
 const episodes: Episode[] = [
-  {
-    "title": "Tes",
-    "description": "Not tes",
-    "servers": [
-      {
-        "name": "Toku",
-        "url": "Rakuen"
-      }
-    ],
-    "number": 1
-  }
+  { number: 1, title: "Doraemon Bahasa Indonesia Episode 1 (1979) - Kota impian Nobita land", description: "Doraemon bahasa indonesia episode 1 ( pertama ) kota impian Nobita land kualitas gambar dan audio lebih baik, Doraemon bahasa indonesia terbaru 2018, doraemon terbaru, doraemon bahasa indonesia, doraemon jadul,doraemon episode awal", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/Kgx4srUCJbs" }] },
+  { number: 2, title: "Doraemon Bahasa Indonesia Episode 2 (1979) - Biskuit Perubah Bentuk", description: "Doraemon jadul awal episode 2 tahun 1979, judul biskuit perubah bentuk", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/FpUZo5TB-3Q" }] },
+
+  { number: 3, title: "Doraemon Bahasa Indonesia episode 3 (1979) - Roti Penghafal  Untuk Ulangan", description: "Kartun Indonesia doraemon bahasa indonesia episode 3, Doraemon bahasa indonesia terbaru 2018, doraemon terbaru, doraemon bahasa indonesia, doraemon jadul,doraemon episode awal", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/lwYfESw6YPc" }] },
+  { number: 4, title: "Doraemon bahasa Indonesia episode 4 (1979) - Stiker N dan S 720p", description: "Doraemon jadul episode awal, episode ke empat bahasa indonesia ( terbaru ), Doraemon bahasa indonesia terbaru 2018, doraemon terbaru, doraemon bahasa indonesia, doraemon jadul,doraemon episode awal", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/LNaIXcUF_wY" }] },
+
+  { number: 5, title: "Doraemon Bahasa Indonesia Episode 5 (1979) - Boneka Penjatuh", description: "Doraemon bahasa indonesia episode 5 (1979) - yang berjudul boneka penjatuh adalah film serial doraemon yang menceritakan tentang alat doraemon yang berbentuk boneka berukuran kecil yang bernama boneka penjatuh, dalam bahasa inggris berjudul wrestling killer. Boneka ini berfungsi untuk menjatuhkan orang yang diminta dengan menyebutkan nama dan memasukan koin seratus. Oleh nobita dipakai untuk menjatuhkan Giant.", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/XRTecALe-6E" }] },
+  { number: 6, title: "Doraemon Bahasa Indonesia episode 6 (1979) - Pengantin Nobita", description: "Doraemon bahasa indonesia terbaru 2018, doraemon terbaru, doraemon bahasa indonesia, doraemon jadul,doraemon episode awal", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/xudmMKQ-jU8" }] },
+
+  { number: 7, title: "Doraemon Bahasa Indonesia episode 7 (1979) - Ramalan Doraemon", description: "Doraemon bahasa indonesia terbaru 2018, doraemon terbaru, doraemon bahasa indonesia, doraemon jadul,doraemon episode awal", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/3MnLDJ88ZZA" }] },
+  { number: 8, title: "Doraemon bahasa Indonesia episode 8 (1979) - Berburu dinosaurus", description: "Doraemon Bahasa Indonesia Terbaru 2018, Doraemon episode awal", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/iFrPB-nLHrQ" }] },
+
+  { number: 9, title: "Doraemon bahasa Indonesia episode 63 (1979) - Berangkat Kesekolah", description: "Doraemon dubbing indonesiadoraemon, Doraemon rcti, Doraemon bahasa indonesia, Terbaru, Kartun seru, Doraemon bahasa indonesia download, Doraemon bahasa indonesia rcti, Doraemon sub indo, New doraemon, Dora indo, Tayangan hari minggu, Nobi nobita, Doraemon bahasa indonesia full movie di rcti, Doraemon bahasa indonesia", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/5YUZZ7E7EG0" }] },
+  { number: 10, title: "Doraemon bahasa Indonesia episode 35 (1979) - Mengenang nenek bagian 1", description: "Doraemon dubbing indonesiadoraemon, Doraemon rcti, Doraemon bahasa indonesia, Terbaru, Kartun seru, Doraemon bahasa indonesia download, Doraemon bahasa indonesia rcti, Doraemon sub indo, New doraemon, Dora indo, Tayangan hari minggu, Nobi nobita, Doraemon bahasa indonesia full movie di rcti, Doraemon bahasa indonesia", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/Jx04B4XP60Q" }] },
+
+  { number: 11, title: "Doraemon bahasa Indonesia episode 36 (1979) - Mengenang Nenek bagian 2", description: "Doraemon dubbing indonesiadoraemon, Doraemon rcti, Doraemon bahasa indonesia, Terbaru, Kartun seru, Doraemon bahasa indonesia download, Doraemon bahasa indonesia rcti, Doraemon sub indo, New doraemon, Dora indo, Tayangan hari minggu, Nobi nobita, Doraemon bahasa indonesia full movie di rcti, Doraemon bahasa indonesia", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/S_15q6bfrcc" }] },
+  { number: 12, title: "Doraemon bahasa indonesia episode 9 (1979) - perang mata - mata tentang rahasia", description: "Doraemon dubbing indonesiadoraemon, Doraemon rcti, Doraemon bahasa indonesia, Terbaru, Kartun seru, Doraemon bahasa indonesia download, Doraemon bahasa indonesia rcti, Doraemon sub indo, New doraemon, Dora indo, Tayangan hari minggu, Nobi nobita, Doraemon bahasa indonesia full movie di rcti, Doraemon bahasa indonesia", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/vT2FjabVx80" }] },
+
+  { number: 13, title: "Doraemon bahasa indonesia episode 10 (1979) - Pistol keberuntungan", description: "Doraemon dubbing indonesiadoraemon, Doraemon rcti, Doraemon bahasa indonesia, Terbaru, Kartun seru, Doraemon bahasa indonesia download, Doraemon bahasa indonesia rcti, Doraemon sub indo, New doraemon, Dora indo, Tayangan hari minggu, Nobi nobita, Doraemon bahasa indonesia full movie di rcti, Doraemon bahasa indonesia", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/Ff-VLSddnDA" }] },
+  { number: 14, title: "Doraemon Bahasa Indonesia episode 11 (1979) - Kamera Kutukan", description: "Doraemon dubbing indonesiadoraemon, Doraemon rcti, Doraemon bahasa indonesia, Terbaru, Kartun seru, Doraemon bahasa indonesia download, Doraemon bahasa indonesia rcti, Doraemon sub indo, New doraemon, Dora indo, Tayangan hari minggu, Nobi nobita, Doraemon bahasa indonesia full movie di rcti, Doraemon bahasa indonesia", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/uOaHNa9_Aok" }] },
+
+  { number: 15, title: "Doraemon Indonesia   eps 12 (1979) - Membangun Kereta bawah tanah", description: "Doraemon dubbing indonesiadoraemon, Doraemon rcti, Doraemon bahasa indonesia, Terbaru, Kartun seru, Doraemon bahasa indonesia download, Doraemon bahasa indonesia rcti, Doraemon sub indo, New doraemon, Dora indo, Tayangan hari minggu, Nobi nobita, Doraemon bahasa indonesia full movie di rcti, Doraemon bahasa indonesia", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/LVCARxs4NQ8" }] },
+  { number: 16, title: "Doraemon Indonesia  eps 13 (1979) -  Pensil Komputer", description: "Doraemon dubbing indonesiadoraemon, Doraemon rcti, Doraemon bahasa indonesia, Terbaru, Kartun seru, Doraemon bahasa indonesia download, Doraemon bahasa indonesia rcti, Doraemon sub indo, New doraemon, Dora indo, Tayangan hari minggu, Nobi nobita, Doraemon bahasa indonesia full movie di rcti, Doraemon bahasa indonesia", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/9I8R7213n2c" }] },
+
+  { number: 17, title: "Doraemon Indo eps 14 (1979) -Permainan Bertukar Ibu", description: "Doraemon dubbing indonesiadoraemon, Doraemon rcti, Doraemon bahasa indonesia, Terbaru, Kartun seru, Doraemon bahasa indonesia download, Doraemon bahasa indonesia rcti, Doraemon sub indo, New doraemon, Dora indo, Tayangan hari minggu, Nobi nobita, Doraemon bahasa indonesia full movie di rcti, Doraemon bahasa indonesia", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/CAoF6gjOchE" }] },
+  { number: 18, title: "Doraemon  indonesia eps 15 (1979) - Pertempuran udara", description: "Doraemon episode 15 -  judul pertempuran udara, Doraemon dubbing indonesiadoraemon, Doraemon rcti, Doraemon bahasa indonesia, Terbaru, Kartun seru, Doraemon bahasa indonesia download, Doraemon bahasa indonesia rcti, Doraemon sub indo, New doraemon, Dora indo, Tayangan hari minggu, Nobi nobita, Doraemon bahasa indonesia full movie di rcti, Doraemon bahasa indonesia", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/s6lO_hU6TvI" }] },
+
+  { number: 19, title: "Doraemon indo  016 pintu untuk sesuatu yang tidak ada", description: "Doraemon judul pintu untuk sesuatu yang tidak ada", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/hNzvlXvHawM" }] },
+
+
+  { number: 20, title: "Doraemon Bahasa Indonesia eps 17 (1979) - Lari, Kuda Besi", description: "Doraemon jadul bahasa Indonesia episode 17 yang berjudul lari, kuda besi. Selamat menonton", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/ov8dJBOni6k" }] },
+  { number: 21, title: "Doraemon indonesia eps 18 (1976) -  Ya saya mengerti", description: "Akhirnya bisa upload lagi setelah sekian lama dikarenakan karna berbagai kesibukan. oke kali ini saya mengupload film kartun Doraemon indonesia eps 18 (1976), yang judulnya  'Ya saya mengerti'", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/Fik-Kcrkp7c" }] },
+
+  { number: 22, title: "Doraemon Indonesia 19 (1979) - Kendaraan Kombinasi", description: "lanjutan episode Doraemon jadul episode 19 judul tentang kendaraan kombinasi", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/5ClTBDNzapM" }] },
+
 ];
 
 export default episodes;
