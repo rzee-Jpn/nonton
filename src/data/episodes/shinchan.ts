@@ -22,7 +22,7 @@ const episodes: Episode[] = [
   { number: 13, title: "SHINCAN BAHASA INDONESIA TERBARU - MELINDUNGI KARPET", description: "MELINDUNGI KARPET", servers: [{ name: "YouTube", url: "https://www.youtube.com/watch?v=pslIOLj6Rz4" }] },
   { number: 14, title: "SHINCAN BAHASA INDONESIA TERBARU - JIWA ROCK N ROLL", description: "JIWA ROCK N ROLL", servers: [{ name: "YouTube", url: "https://www.youtube.com/watch?v=d0jWLo0xUH4" }] },
 
-  { number: 15, title: "Crayon Sinchan | Memata-matai shinchan | Sub Indo", description: "Jangan berusaha/mengerjakan sesuatu dengan setengah hati, karena hasil yang kamu dapat juga hanya setengahnya.", servers: [{ name: "YouTube", url: "https://www.youtube.com/watch?v=UKoHFF4uh1U" }] },
+  { number: 15, title: "Crayon Sinchan | Memata-matai shinchan | Sub Indo", description: "Jangan berusaha/mengerjakan sesuatu dengan setengah hati, karena hasil yang kamu dapat juga hanya setengahnya.", servers: [{ name: "YouTube", url: "https://www.youtube.com/embed/UKoHFF4uh1U" }] },
   { number: 16, title: "SHINCAN BAHASA INDONESIA TERBARU - BERJALAN DI ATAS GARIS", description: "BERJALAN DI ATAS GARIS", servers: [{ name: "YouTube", url: "https://www.youtube.com/watch?v=3kEOFoWG4oY" }] },
 
   { number: 17, title: "SHINCAN BAHASA INDONESIA TERBARU - AYO PERGI KE ACARA HIMAWARI", description: "AYO PERGI KE ACARA HIMAWARI", servers: [{ name: "YouTube", url: "https://www.youtube.com/watch?v=9CMzW5iy44U" }] },
