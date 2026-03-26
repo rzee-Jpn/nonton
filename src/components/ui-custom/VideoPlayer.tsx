@@ -13,7 +13,7 @@
 //  • HLS streaming (.m3u8) via hls.js CDN
 //  • Subtitle (.vtt) multi-track
 //  • Loading spinner + Buffering indicator
-//  • Error state + Retry
+//  • Error state + Retry (termasuk HLS)
 //  • Auto-hide controls (3 detik)
 //  • Resume playback (localStorage)
 //  • Touch-friendly
@@ -52,8 +52,6 @@ function isHLSUrl(url: string): boolean {
   return url.split('?')[0].toLowerCase().endsWith('.m3u8');
 }
 
-// FIX 1: Ganti return type dari `Promise<typeof window.Hls>` → `Promise<any>`
-// karena TypeScript tidak mengenal `Hls` pada tipe Window secara default.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function loadHlsJs(): Promise<any> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -157,6 +155,9 @@ function NativePlayer({
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const hlsRef = useRef<any>(null);
+  // Refs to avoid stale closures in callbacks
+  const resumeKeyRef = useRef(resumeKey);
+  const urlRef = useRef(url);
 
   // Core state
   const [playing, setPlaying] = useState(false);
@@ -180,6 +181,15 @@ function NativePlayer({
   // Flash play/pause icon
   const [flash, setFlash] = useState<'play' | 'pause' | null>(null);
 
+  // Keep refs current so closures always see latest values
+  useEffect(() => { resumeKeyRef.current = resumeKey; }, [resumeKey]);
+  useEffect(() => { urlRef.current = url; }, [url]);
+
+  // ── FIX 1: Timer cleanup on unmount ────────────────────────────────────
+  useEffect(() => {
+    return () => { clearTimeout(timerRef.current); };
+  }, []);
+
   // ── HLS / Source Setup ─────────────────────────────────────────────────
 
   useEffect(() => {
@@ -193,14 +203,20 @@ function NativePlayer({
     setDuration(0);
     setBuffered(0);
 
+    // Destroy previous HLS instance
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
+    // Clear previous src to avoid stale video flash
+    video.removeAttribute('src');
+    video.load();
 
+    // FIX 2: Use ref so applyResume always reads the latest resumeKey
     const applyResume = () => {
-      if (!resumeKey) return;
-      const saved = parseFloat(localStorage.getItem(`vp_resume_${resumeKey}`) || '0');
+      const key = resumeKeyRef.current;
+      if (!key) return;
+      const saved = parseFloat(localStorage.getItem(`vp_resume_${key}`) || '0');
       if (saved > 5 && video.duration) {
         video.currentTime = Math.min(saved, video.duration - 3);
       }
@@ -222,8 +238,6 @@ function NativePlayer({
             hlsRef.current = hls;
             hls.loadSource(url);
             hls.attachMedia(video);
-            // FIX 2: Tambahkan parameter `_event` agar sesuai signature callback hls.js
-            // yang mengharapkan minimal 1 argumen (event name).
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             hls.on(Hls.Events.MANIFEST_PARSED, (_event: any) => {
               applyResume();
@@ -245,6 +259,7 @@ function NativePlayer({
         hlsRef.current = null;
       }
     };
+  // resumeKey intentionally excluded — handled via ref (resumeKeyRef)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
 
@@ -260,8 +275,9 @@ function NativePlayer({
       setCurrentTime(v.currentTime);
       if (v.buffered.length > 0)
         setBuffered(v.buffered.end(v.buffered.length - 1));
-      if (resumeKey && v.currentTime > 5)
-        localStorage.setItem(`vp_resume_${resumeKey}`, String(v.currentTime));
+      const key = resumeKeyRef.current;
+      if (key && v.currentTime > 5)
+        localStorage.setItem(`vp_resume_${key}`, String(v.currentTime));
     };
     const onDuration = () => setDuration(v.duration || 0);
     const onWaiting = () => setBuffering(true);
@@ -270,7 +286,8 @@ function NativePlayer({
     const onError = () => setError('Gagal memuat video. Coba server lain.');
     const onEnd = () => {
       setPlaying(false);
-      if (resumeKey) localStorage.removeItem(`vp_resume_${resumeKey}`);
+      const key = resumeKeyRef.current;
+      if (key) localStorage.removeItem(`vp_resume_${key}`);
       onEnded?.();
     };
     const onEnterPiP = () => setPip(true);
@@ -301,7 +318,9 @@ function NativePlayer({
       v.removeEventListener('enterpictureinpicture', onEnterPiP);
       v.removeEventListener('leavepictureinpicture', onLeavePiP);
     };
-  }, [resumeKey, onEnded]);
+  // onEnded is intentionally excluded — use a ref if it can change frequently
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Fullscreen listener ────────────────────────────────────────────────
 
@@ -320,6 +339,18 @@ function NativePlayer({
       t.mode = i === activeSub ? 'showing' : 'hidden';
     });
   }, [activeSub]);
+
+  // ── FIX 3: Close speed/subtitle popups when clicking outside ──────────
+  useEffect(() => {
+    if (!showSpeed && !showSub) return;
+    const handler = () => { setShowSpeed(false); setShowSub(false); };
+    // Delay so the current click that opened it doesn't immediately close it
+    const id = setTimeout(() => document.addEventListener('click', handler, { once: true }), 0);
+    return () => {
+      clearTimeout(id);
+      document.removeEventListener('click', handler);
+    };
+  }, [showSpeed, showSub]);
 
   // ── Auto-hide controls ─────────────────────────────────────────────────
 
@@ -350,10 +381,10 @@ function NativePlayer({
 
   const skip = useCallback((sec: number) => {
     const v = videoRef.current;
-    if (!v || !duration) return;
-    v.currentTime = Math.max(0, Math.min(duration, v.currentTime + sec));
+    if (!v || !v.duration) return;
+    v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + sec));
     resetTimer();
-  }, [duration, resetTimer]);
+  }, [resetTimer]);
 
   const setVol = useCallback((val: number) => {
     const v = videoRef.current;
@@ -402,27 +433,58 @@ function NativePlayer({
     (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
       const bar = progressRef.current;
       const v = videoRef.current;
-      if (!bar || !v || !duration) return;
+      if (!bar || !v || !v.duration) return;
       const rect = bar.getBoundingClientRect();
       const clientX =
         'touches' in e ? e.touches[0].clientX : e.clientX;
       const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      v.currentTime = ratio * duration;
-      setCurrentTime(ratio * duration);
+      v.currentTime = ratio * v.duration;
+      setCurrentTime(ratio * v.duration);
     },
-    [duration]
+    []
   );
 
+  // FIX 4: retryLoad now works for both native and HLS streams
   const retryLoad = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
     setError(null);
     setLoading(true);
-    v.load();
-    v.play().catch(() => {});
+
+    if (isHLSUrl(urlRef.current)) {
+      // Re-trigger HLS setup by destroying and re-initializing
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+      loadHlsJs()
+        .then((Hls) => {
+          if (!Hls || !Hls.isSupported()) {
+            setError('Browser Anda tidak mendukung HLS streaming.');
+            return;
+          }
+          const hls = new Hls({ enableWorker: false });
+          hlsRef.current = hls;
+          hls.loadSource(urlRef.current);
+          hls.attachMedia(v);
+          hls.on(Hls.Events.ERROR, (_: unknown, data: { fatal: boolean }) => {
+            if (data.fatal) setError('Gagal memuat stream. Coba server lain.');
+          });
+          v.play().catch(() => {});
+        })
+        .catch(() => setError('Gagal inisialisasi HLS player.'));
+    } else {
+      v.src = urlRef.current;
+      v.load();
+      v.play().catch(() => {});
+    }
   }, []);
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────────
+
+  // Use refs to avoid re-registering listeners on every volume change
+  const volumeRef = useRef(volume);
+  useEffect(() => { volumeRef.current = volume; }, [volume]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -432,8 +494,8 @@ function NativePlayer({
         case 'Space': case 'KeyK': e.preventDefault(); togglePlay(); break;
         case 'ArrowRight': e.preventDefault(); skip(10); break;
         case 'ArrowLeft':  e.preventDefault(); skip(-10); break;
-        case 'ArrowUp':    e.preventDefault(); setVol(volume + 0.1); break;
-        case 'ArrowDown':  e.preventDefault(); setVol(volume - 0.1); break;
+        case 'ArrowUp':    e.preventDefault(); setVol(volumeRef.current + 0.1); break;
+        case 'ArrowDown':  e.preventDefault(); setVol(volumeRef.current - 0.1); break;
         case 'KeyM': toggleMute(); break;
         case 'KeyF': toggleFS(); break;
         case 'KeyP': togglePiP(); break;
@@ -441,7 +503,8 @@ function NativePlayer({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [togglePlay, skip, setVol, toggleMute, toggleFS, togglePiP, volume]);
+  // volume removed from deps — read via volumeRef instead
+  }, [togglePlay, skip, setVol, toggleMute, toggleFS, togglePiP]);
 
   // ── Derived values ─────────────────────────────────────────────────────
 
@@ -457,7 +520,13 @@ function NativePlayer({
       ref={containerRef}
       className={`relative bg-black overflow-hidden select-none outline-none ${className}`}
       onMouseMove={resetTimer}
-      onMouseLeave={() => { if (playing) timerRef.current = setTimeout(() => setControls(false), 800); }}
+      // FIX 5: Clear existing timer before setting new one in onMouseLeave
+      onMouseLeave={() => {
+        if (playing) {
+          clearTimeout(timerRef.current);
+          timerRef.current = setTimeout(() => setControls(false), 800);
+        }
+      }}
       onContextMenu={(e) => e.preventDefault()}
       tabIndex={0}
       style={{ cursor: showOverlay ? 'default' : 'none' }}
@@ -555,7 +624,7 @@ function NativePlayer({
               style={{ left: `${progress}%`, transform: 'translate(-50%, -50%)' }}
             />
             {/* hover time tooltip */}
-            {hoverTime !== null && (
+            {hoverTime !== null && duration > 0 && (
               <div
                 className="absolute bottom-4 bg-black/90 text-white text-[10px] px-1.5 py-0.5 rounded font-mono pointer-events-none"
                 style={{ left: `${(hoverTime / duration) * 100}%`, transform: 'translateX(-50%)' }}
@@ -614,7 +683,7 @@ function NativePlayer({
             {subtitles.length > 0 && (
               <div className="relative">
                 <button
-                  onClick={() => { setShowSub(!showSub); setShowSpeed(false); }}
+                  onClick={(e) => { e.stopPropagation(); setShowSub(v => !v); setShowSpeed(false); }}
                   className={`p-1.5 transition-colors ${activeSub >= 0 ? 'text-[#e63946]' : 'text-white hover:text-[#e63946]'}`}
                   title="Subtitle"
                 >
@@ -625,7 +694,7 @@ function NativePlayer({
                     {[{ label: 'Nonaktif', srclang: '', src: '' }, ...subtitles].map((s, i) => (
                       <button
                         key={i}
-                        onClick={() => { setActiveSub(i - 1); setShowSub(false); }}
+                        onClick={(e) => { e.stopPropagation(); setActiveSub(i - 1); setShowSub(false); }}
                         className={`block w-full text-left px-3 py-1.5 text-xs transition-colors ${activeSub === i - 1 ? 'text-[#e63946] bg-[#e63946]/10' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
                       >
                         {s.label || 'Nonaktif'}
@@ -639,7 +708,7 @@ function NativePlayer({
             {/* Speed */}
             <div className="relative">
               <button
-                onClick={() => { setShowSpeed(!showSpeed); setShowSub(false); }}
+                onClick={(e) => { e.stopPropagation(); setShowSpeed(v => !v); setShowSub(false); }}
                 className={`p-1.5 text-[11px] font-bold w-9 text-center transition-colors ${speed !== 1 ? 'text-[#e63946]' : 'text-white hover:text-[#e63946]'}`}
                 title="Kecepatan"
               >
@@ -650,7 +719,7 @@ function NativePlayer({
                   {SPEEDS.map((r) => (
                     <button
                       key={r}
-                      onClick={() => changeSpeed(r)}
+                      onClick={(e) => { e.stopPropagation(); changeSpeed(r); }}
                       className={`block w-full text-right px-4 py-1.5 text-xs transition-colors ${speed === r ? 'text-[#e63946] bg-[#e63946]/10 font-bold' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
                     >
                       {r}×
