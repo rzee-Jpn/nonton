@@ -174,6 +174,42 @@ const DEFAULT_ANIME: Anime[] = [
     "description": "Nxislspcjkslsxnudnsndb",
     "trailer": "",
     "id": 1774552070939
+  },
+  {
+    "title": "Doraemon 2005",
+    "slug": "doraemon",
+    "cover": "https://m.media-amazon.com/images/M/MV5BOTE4ZjlkOWYtZDViYy00ZmZlLTkyMmQtZjNiNTBjMzBiNDA0XkEyXkFqcGc@._V1_QL75_UY281_CR4,0,190,281_.jpg",
+    "banner": "https://m.media-amazon.com/images/M/MV5BOTE4ZjlkOWYtZDViYy00ZmZlLTkyMmQtZjNiNTBjMzBiNDA0XkEyXkFqcGc@._V1_QL75_UY281_CR4,0,190,281_.jpg",
+    "studio": "Shin-Ei",
+    "status": "Completed",
+    "total_episodes": 20,
+    "year": 2005,
+    "rating": "8.2",
+    "genres": [
+      "Adventure",
+      "Slice of life"
+    ],
+    "description": "Doraemon adalah robot kucing dari abad ke-22 yang dikirim ke masa lalu untuk membantu Nobita Nobi, seorang anak SD pemalas, agar nasib masa depannya berubah menjadi lebih baik. Dengan berbagai alat ajaib dari kantong ajaibnya, Doraemon membantu Nobita mengatasi masalah sehari-hari, terutama dari Gian dan Suneo, serta mendekati Shizuka.",
+    "trailer": "",
+    "id": 1774564314718
+  },
+  {
+    "title": "Majo no tabi tabi",
+    "slug": "elaina",
+    "cover": "https://static.wikia.nocookie.net/majo-no-tabitabi/images/3/3b/Anime_Key_Visual.png/revision/latest?cb=20201006044342",
+    "banner": "https://static.wikia.nocookie.net/majo-no-tabitabi/images/3/3b/Anime_Key_Visual.png/revision/latest?cb=20201006044342",
+    "studio": "C2C",
+    "status": "Completed",
+    "total_episodes": 12,
+    "year": 2020,
+    "rating": "7.0",
+    "genres": [
+      "Adventure",
+      "Fantasy"
+    ],
+    "description": "Majo no tabi",
+    "trailer": "",
+    "id": 1774663157181
   }
 ];
 
